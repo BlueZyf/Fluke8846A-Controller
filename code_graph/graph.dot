@@ -1,0 +1,20 @@
+digraph G {
+    graph [rankdir=TB];
+    subgraph cluster_G {
+
+        graph [style="filled,rounded", fillcolor="#80808018", label=""];
+        test_mock [label="test_mock", style="filled", fillcolor="#ffffffb2", fontcolor="#000000", group="0"];
+        test_mock__create_mock_connection_example [label="create_mock_connection_example", style="filled", fillcolor="#feccccb2", fontcolor="#000000", group="0"];
+        test_mock__main [label="main", style="filled", fillcolor="#feccccb2", fontcolor="#000000", group="0"];
+        test_mock__quick_mock_test [label="quick_mock_test", style="filled", fillcolor="#feccccb2", fontcolor="#000000", group="0"];
+        test_mock__test_gui_with_mock [label="test_gui_with_mock", style="filled", fillcolor="#feccccb2", fontcolor="#000000", group="0"];
+        test_mock__test_mock_adapter_direct [label="test_mock_adapter_direct", style="filled", fillcolor="#feccccb2", fontcolor="#000000", group="0"];
+        test_mock__test_mock_with_instrument [label="test_mock_with_instrument", style="filled", fillcolor="#feccccb2", fontcolor="#000000", group="0"];
+    }
+        test_mock -> test_mock__main [style="solid",  color="#000000"];
+        test_mock__main -> test_mock__create_mock_connection_example [style="solid",  color="#000000"];
+        test_mock__main -> test_mock__quick_mock_test [style="solid",  color="#000000"];
+        test_mock__main -> test_mock__test_mock_adapter_direct [style="solid",  color="#000000"];
+        test_mock__main -> test_mock__test_mock_with_instrument [style="solid",  color="#000000"];
+        test_mock__main -> test_mock__test_gui_with_mock [style="solid",  color="#000000"];
+    }

@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fluke8846a-control-app"
+version = "0.1.0"
+description = "Control application for FLUKE 8846A Digital Multimeter"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "PyVISA>=1.13.0",
+    "PyVISA-py>=0.6.3",
+    "PySide6>=6.5.0",
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    "pyqtgraph>=0.13.0",
+    "SQLAlchemy>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-qt>=4.2.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pytest-cov>=4.0.0",
+]
+serial = ["pyserial>=3.5"]
+usb = ["pyusb>=1.2.1"]
+
+[project.scripts]
+fluke8846a-app = "fluke8846a_app.main:main"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["src/fluke8846a_app/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v"

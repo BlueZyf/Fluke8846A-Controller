@@ -1,0 +1,31 @@
+{
+  "device": {
+    "interface": "GPIB",
+    "gpib_address": 22,
+    "usb_vendor_id": "0x1234",
+    "usb_product_id": "0x5678",
+    "serial_port": "COM3",
+    "serial_baudrate": 9600,
+    "timeout": 5000
+  },
+  "measurement": {
+    "default_function": "DCV",
+    "default_range": "AUTO",
+    "default_resolution": "6.5",
+    "sample_count": 10,
+    "measurement_interval": 1.0,
+    "auto_record": false,
+    "log_format": ".csv"
+  },
+  "display": {
+    "theme": "light",
+    "language": "zh_CN",
+    "window_width": 1255,
+    "window_height": 1137,
+    "show_grid": true,
+    "auto_scale": true,
+    "refresh_rate": 1000
+  },
+  "last_modified": "2026-03-07T15:22:48.325760",
+  "version": "0.1.0"
+}

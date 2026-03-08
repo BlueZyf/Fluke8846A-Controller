@@ -20,9 +20,10 @@ def setup_signal_handlers():
         print("\n接收到中断信号，正在关闭应用...")
         sys.exit(0)
 
+    # SIGINT   2   Ctrl+C    终止程序 触发后调用我的函数signal_handler
+    # SIGTERM  15  kill命令  终止程序 触发后调用我的函数signal_handler
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-
 
 def main():
     """应用主函数"""

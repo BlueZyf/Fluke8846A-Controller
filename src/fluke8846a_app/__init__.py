@@ -11,4 +11,5 @@ __email__ = ""
 from .main import main
 from .app import Fluke8846AApp
 
-__all__ = ["main", "Fluke8846AApp", "__version__"]
+#控制 import * 的行为
+__all__ = ["main", "Fluke8846AApp", "__version__"]  

@@ -15,6 +15,7 @@ from datetime import datetime
 from ..communication.visa_manager import VisaManager
 from ..communication.serial_adapter import SerialAdapter
 from ..communication.gpib_adapter import GPIBAdapter
+from ..communication.tcp_adapter import TCPAdapter
 from ..communication.base_adapter import BaseAdapter
 from ..config.constants import *
 from ..utils.logger import get_logger
@@ -212,6 +213,48 @@ class Fluke8846AInstrument:
                 self.disconnect()
                 return False
 
+    def connect_tcp(self, host: str, port: int = 5025, timeout: float = 5.0) -> bool:
+        """
+        通过TCP/IP连接仪器
+
+        Args:
+            host: 设备IP地址或主机名
+            port: TCP端口（默认5025）
+            timeout: 超时时间（秒，默认5.0）
+
+        Returns:
+            是否连接成功
+        """
+        with self._lock:
+            try:
+                logger.info(f"尝试TCP连接: {host}:{port}")
+
+                # 创建TCP适配器
+                adapter_id = f"tcp_{self.instrument_id}"
+                self.adapter = TCPAdapter(adapter_id)
+                self.interface = INTERFACE_TCP
+
+                # 建立连接
+                if not self.adapter.connect(host=host, port=port, timeout=timeout):
+                    raise InstrumentError("TCP连接失败")
+
+                # 测试通信
+                if not self._test_communication():
+                    raise InstrumentError("TCP通信测试失败")
+
+                self.connected = True
+                logger.info(f"TCP连接成功: {host}:{port}")
+
+                # 获取设备信息
+                self._read_device_info()
+
+                return True
+
+            except Exception as e:
+                logger.error(f"TCP连接失败: {e}")
+                self.disconnect()
+                return False
+
     def connect_mock(self, **kwargs) -> bool:
         """
         连接模拟设备
@@ -233,7 +276,7 @@ class Fluke8846AInstrument:
                 # 创建模拟适配器
                 adapter_id = kwargs.get("adapter_id", f"mock_{self.instrument_id}")
                 self.adapter = MockAdapter(adapter_id)
-                self.interface = "MOCK"
+                self.interface = INTERFACE_MOCK
 
                 # 建立连接
                 if not self.adapter.connect(**kwargs):

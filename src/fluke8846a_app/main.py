@@ -10,8 +10,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from fluke8846a_app.app import Fluke8846AApp
-from fluke8846a_app.utils.logger import setup_logging
+from .app import Fluke8846AApp
+from .utils.logger import setup_logging
 
 
 def setup_signal_handlers():

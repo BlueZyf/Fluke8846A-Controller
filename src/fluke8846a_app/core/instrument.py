@@ -228,6 +228,7 @@ class Fluke8846AInstrument:
                 from ..communication.mock_adapter import MockAdapter
 
                 logger.info("尝试连接模拟设备")
+                logger.debug(f"连接参数: {kwargs}")
 
                 # 创建模拟适配器
                 adapter_id = kwargs.get("adapter_id", f"mock_{self.instrument_id}")
@@ -548,8 +549,10 @@ class Fluke8846AInstrument:
         try:
             # 尝试识别命令
             response = self._send_command("*IDN?")
+            logger.debug(f"通信测试响应: {response}")
             return response is not None and len(response) > 0
-        except:
+        except Exception as e:
+            logger.debug(f"通信测试异常: {e}")
             return False
 
     def _read_device_info(self):
@@ -564,7 +567,9 @@ class Fluke8846AInstrument:
         try:
             if self.adapter:
                 # 使用适配器
+                logger.debug(f"通过适配器发送命令: {command}")
                 response = self.adapter.query(command.encode('utf-8'))
+                logger.debug(f"适配器响应: {response}")
                 return response.decode('utf-8', errors='ignore') if response else None
             elif self.visa_manager and self.interface:
                 # 使用VISA管理器
@@ -572,6 +577,7 @@ class Fluke8846AInstrument:
                 # 实际应该保存资源名称
                 return None
             else:
+                logger.debug("没有可用的适配器或VISA管理器")
                 return None
         except Exception as e:
             logger.error(f"发送命令失败: {command}, 错误: {e}")

@@ -9,7 +9,7 @@ from typing import List, Optional, Dict, Any
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel,
-    QComboBox, QLineEdit, QSpinBox, QPushButton, QTabWidget,
+    QComboBox, QLineEdit, QSpinBox, QDoubleSpinBox, QPushButton, QTabWidget,
     QFormLayout, QCheckBox, QMessageBox, QProgressBar,
     QListWidget, QListWidgetItem, QDialogButtonBox, QWidget
 )

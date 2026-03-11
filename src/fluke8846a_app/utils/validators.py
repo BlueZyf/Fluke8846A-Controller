@@ -3,6 +3,7 @@
 """
 
 import re
+import platform
 from typing import Union, Optional, Tuple
 from ipaddress import ip_address, IPv4Address, IPv6Address
 
@@ -106,7 +107,7 @@ def validate_gpib_address(address: Union[str, int]) -> bool:
 
 def validate_serial_port(port: str) -> bool:
     """
-    验证串口名称
+    验证串口名称（平台感知）
 
     Args:
         port: 串口名称
@@ -114,10 +115,41 @@ def validate_serial_port(port: str) -> bool:
     Returns:
         是否有效
     """
-    # Windows: COM1-COM256
-    # Linux: /dev/ttyS0, /dev/ttyUSB0等
-    pattern = r'^(COM[1-9][0-9]?[0-9]?$|/dev/tty[A-Za-z0-9]+$)'
+    system = platform.system().lower()
+
+    if system == "windows":
+        # Windows: COM1-COM256
+        pattern = r'^COM([1-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-6])$'
+    elif system == "linux":
+        # Linux: /dev/ttyS0, /dev/ttyUSB0, /dev/ttyACM0等
+        pattern = r'^/dev/tty[A-Za-z0-9]+$'
+    elif system == "darwin":  # macOS
+        # macOS: /dev/tty.usbserial, /dev/tty.usbmodem, /dev/cu.*
+        pattern = r'^/dev/(tty|cu)\.[A-Za-z0-9]+$'
+    else:
+        # 其他平台使用通用模式
+        pattern = r'^(COM[1-9][0-9]?[0-9]?$|/dev/(tty|cu)[A-Za-z0-9\.]+$)'
+
     return bool(re.match(pattern, port))
+
+
+def get_default_serial_port() -> str:
+    """
+    获取平台默认串口名称
+
+    Returns:
+        默认串口名称
+    """
+    system = platform.system().lower()
+
+    if system == "windows":
+        return "COM3"
+    elif system == "linux":
+        return "/dev/ttyS0"
+    elif system == "darwin":  # macOS
+        return "/dev/tty.usbserial"
+    else:
+        return "COM1"
 
 
 def validate_baudrate(baudrate: Union[str, int]) -> bool:

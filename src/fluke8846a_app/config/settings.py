@@ -10,6 +10,7 @@ from datetime import datetime
 
 from .constants import *
 from .paths import paths
+from ..utils.validators import get_default_serial_port
 
 
 @dataclass
@@ -19,7 +20,7 @@ class DeviceSettings:
     gpib_address: int = 22
     usb_vendor_id: str = "0x1234"
     usb_product_id: str = "0x5678"
-    serial_port: str = "COM3"
+    serial_port: str = field(default_factory=get_default_serial_port)
     serial_baudrate: int = 9600
     timeout: int = DEFAULT_TIMEOUT
 

@@ -104,6 +104,178 @@ source venv/bin/activate
 python -m fluke8846a_app.main
 ```
 
+### Ubuntu/Linux特定安装说明
+
+#### 1. 系统依赖安装
+```bash
+# 更新包列表
+sudo apt update
+
+# 安装系统依赖
+sudo apt install -y \
+    python3-pip \
+    python3-venv \
+    libusb-1.0-0 \
+    libudev-dev \
+    libxcb-xinerama0 \
+    libxcb-icccm4 \
+    libxcb-image0 \
+    libxcb-keysyms1 \
+    libxcb-render-util0 \
+    libxcb-xkb1 \
+    libxkbcommon-x11-0
+
+# 安装GPIB支持（可选）
+sudo apt install -y linux-gpib linux-gpib-dkms
+```
+
+#### 2. 用户组配置（串口/USB权限）
+```bash
+# 将当前用户添加到dialout组（串口权限）
+sudo usermod -a -G dialout $USER
+
+# 将当前用户添加到plugdev组（USB设备权限）
+sudo usermod -a -G plugdev $USER
+
+# 重新登录使组更改生效
+# 或使用以下命令立即生效（需要输入密码）
+newgrp dialout
+newgrp plugdev
+```
+
+#### 3. 虚拟环境创建
+```bash
+# 创建虚拟环境
+python3 -m venv venv
+
+# 激活虚拟环境
+source venv/bin/activate
+```
+
+#### 4. 安装Python依赖
+```bash
+# 安装核心依赖
+pip install -r requirements.txt
+
+# 安装开发依赖（可选）
+pip install -e ".[dev]"
+```
+
+#### 5. VISA配置（Linux）
+```bash
+# 安装PyVISA-py作为VISA后端
+pip install pyvisa-py
+
+# 配置PyVISA使用pyvisa-py后端
+# 创建或编辑 ~/.pyvisarc 文件
+echo "[Paths]" > ~/.pyvisarc
+echo "visa_library = @py" >> ~/.pyvisarc
+
+# 验证VISA配置
+python -c "import pyvisa; rm = pyvisa.ResourceManager('@py'); print(f'VISA后端: {rm}')"
+```
+
+#### 6. 串口设备检测
+```bash
+# 查看可用串口
+ls /dev/tty*
+
+# 查看USB串口设备
+ls /dev/ttyUSB*
+
+# 查看ACM设备（Arduino等）
+ls /dev/ttyACM*
+
+# 查看设备权限
+ls -la /dev/ttyUSB0
+```
+
+#### 7. 运行应用
+```bash
+# 激活虚拟环境
+source venv/bin/activate
+
+# 运行应用
+python -m fluke8846a_app.main
+
+# 或使用直接运行
+python src/fluke8846a_app/main.py
+```
+
+#### Ubuntu常见问题
+
+##### 问题1: 权限不足
+```
+PermissionError: [Errno 13] Permission denied: '/dev/ttyUSB0'
+```
+**解决方案**:
+```bash
+# 临时解决方案（每次重启后需要重新执行）
+sudo chmod 666 /dev/ttyUSB0
+
+# 永久解决方案（推荐）
+# 按照上面的"用户组配置"步骤操作
+```
+
+##### 问题2: Qt平台插件错误
+```
+This application failed to start because no Qt platform plugin could be initialized.
+```
+**解决方案**:
+```bash
+# 安装缺失的Qt依赖
+sudo apt install -y libxcb-xinerama0
+
+# 设置环境变量
+export QT_QPA_PLATFORM=xcb
+```
+
+##### 问题3: VISA资源未找到
+```
+VisaIOError: VI_ERROR_RSRC_NFOUND
+```
+**解决方案**:
+```bash
+# 确保使用pyvisa-py后端
+python -c "import pyvisa; print(pyvisa.ResourceManager.list_backends())"
+
+# 手动指定后端
+import pyvisa
+rm = pyvisa.ResourceManager('@py')
+```
+
+##### 问题4: USB设备未识别
+```
+usb.core.USBError: [Errno 13] Access denied (insufficient permissions)
+```
+**解决方案**:
+```bash
+# 创建USB规则文件
+sudo nano /etc/udev/rules.d/99-fluke8846a.rules
+
+# 添加以下内容（根据实际Vendor ID和Product ID修改）
+SUBSYSTEM=="usb", ATTR{idVendor}=="1234", ATTR{idProduct}=="5678", MODE="0666", GROUP="plugdev"
+
+# 重新加载udev规则
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+##### 问题5: 缺少共享库
+```
+ImportError: libQt6Core.so.6: cannot open shared object file: No such file or directory
+```
+**解决方案**:
+```bash
+# 安装Qt6运行时库
+sudo apt install -y qt6-base-dev
+```
+
+#### 性能优化建议
+1. **禁用合成器**: 如果遇到GUI性能问题，可以尝试禁用桌面合成器
+2. **使用专有驱动**: 对于NVIDIA显卡，安装专有驱动可能改善GUI性能
+3. **调整交换空间**: 确保有足够的交换空间，特别是内存较小的系统
+
 ### 故障排除
 #### 常见问题 1: 模块导入错误
 ```

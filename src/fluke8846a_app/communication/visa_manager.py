@@ -357,7 +357,7 @@ class VisaManager:
             return INTERFACE_GPIB
         elif "USB" in resource_name:
             return INTERFACE_USB
-        elif "ASRL" in resource_name or "COM" in resource_name:
+        elif "ASRL" in resource_name or "COM" in resource_name or "/DEV/TTY" in resource_name:
             return INTERFACE_SERIAL
         else:
             # 默认返回GPIB

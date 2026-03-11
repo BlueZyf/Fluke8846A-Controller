@@ -4,6 +4,74 @@
 
 ## 更新记录
 
+### 2026-03-12: 跨平台兼容性增强
+
+**任务描述**: 使FLUKE 8846A控制应用在Windows和Ubuntu/Linux上都能正常运行。
+
+**完成的工作**:
+1. **平台感知的串口验证** - 改进validators.py中的validate_serial_port函数，根据操作系统动态验证串口名称
+2. **动态默认串口配置** - 修改settings.py中的DeviceSettings类，使用平台特定的默认串口
+3. **扩展VISA接口检测** - 更新visa_manager.py中的_detect_interface方法，支持Linux串口前缀
+4. **环境变量文档更新** - 在.env.example中添加多平台串口配置说明
+5. **Ubuntu安装指南** - 在README.md中添加完整的Ubuntu/Linux安装和配置说明
+6. **跨平台测试策略** - 创建测试计划确保在两个平台上都能正常工作
+
+**详细变更**:
+
+#### 1. 串口验证改进 (`src/fluke8846a_app/utils/validators.py`)
+- 新增`get_default_serial_port()`函数，根据操作系统返回默认串口
+- 改进`validate_serial_port()`函数，使用平台特定的正则表达式
+- 支持Windows (COM*)、Linux (/dev/tty*)、macOS (/dev/tty.*|/dev/cu.*)
+
+#### 2. 动态默认配置 (`src/fluke8846a_app/config/settings.py`)
+- 修改`DeviceSettings`类的`serial_port`字段，使用`field(default_factory=get_default_serial_port)`
+- 移除硬编码的"COM3"默认值
+
+#### 3. VISA管理器增强 (`src/fluke8846a_app/communication/visa_manager.py`)
+- 扩展`_detect_interface()`方法，检测Linux的"/dev/tty"前缀
+- 改进接口类型检测逻辑
+
+#### 4. 环境变量文档 (`/.env.example`)
+- 添加多平台串口配置注释
+- 说明不同操作系统的串口命名约定
+
+#### 5. Ubuntu安装指南 (`/README.md`)
+- 添加完整的Ubuntu/Linux安装章节
+- 包含系统依赖、用户组配置、权限设置、故障排除
+- 提供常见问题的解决方案
+
+#### 6. 测试脚本 (`/scripts/test_cross_platform.py`)
+- 创建跨平台兼容性测试脚本
+- 验证串口验证、默认配置、VISA检测等功能
+
+**跨平台测试策略**:
+1. **Windows测试**: 验证COM端口检测和验证
+2. **Ubuntu测试**: 验证/dev/tty*端口检测和权限处理
+3. **功能测试**: 确保核心功能在两个平台上一致
+4. **GUI测试**: 验证Qt应用在不同平台上的显示和交互
+
+**文件清单**:
+```
+修改文件:
+- src/fluke8846a_app/utils/validators.py
+- src/fluke8846a_app/config/settings.py
+- src/fluke8846a_app/communication/visa_manager.py
+- .env.example
+- README.md
+- UPDATES.md
+
+新增文件:
+- scripts/test_cross_platform.py
+```
+
+**注意事项**:
+1. Linux用户需要正确配置串口和USB设备权限
+2. 不同Linux发行版可能需要不同的系统依赖
+3. 生产环境中应考虑更严格的权限管理
+4. 建议在实际硬件上进行跨平台测试
+
+---
+
 ### 2026-03-11: TCP/IP网络连接支持
 
 **任务描述**: 添加通过网线（TCP/IP）连接FLUKE 8846A仪器的功能。

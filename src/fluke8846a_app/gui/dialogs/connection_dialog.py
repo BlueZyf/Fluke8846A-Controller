@@ -20,6 +20,7 @@ from ...config.settings import AppSettings
 from ...config.constants import *
 from ...communication.visa_manager import VisaManager
 from ...communication.serial_adapter import SerialAdapter
+from ...communication.tcp_adapter import TCPAdapter
 
 
 class ConnectionDialog(QDialog):
@@ -84,6 +85,10 @@ class ConnectionDialog(QDialog):
         # 模拟选项卡
         self.mock_tab = self._create_mock_tab()
         self.tab_widget.addTab(self.mock_tab, "模拟")
+
+        # TCP选项卡
+        self.tcp_tab = self._create_tcp_tab()
+        self.tab_widget.addTab(self.tcp_tab, "TCP/IP")
 
         main_layout.addWidget(self.tab_widget, 1)
 
@@ -336,6 +341,55 @@ class ConnectionDialog(QDialog):
 
         return widget
 
+    def _create_tcp_tab(self) -> QWidget:
+        """创建TCP选项卡"""
+        widget = QWidget()
+        layout = QFormLayout(widget)
+        layout.setSpacing(10)
+
+        # IP地址/主机名
+        self.tcp_host_edit = QLineEdit("192.168.1.100")
+        self.tcp_host_edit.setPlaceholderText("例如: 192.168.1.100 或 instrument.local")
+        layout.addRow("IP地址/主机名:", self.tcp_host_edit)
+
+        # TCP端口
+        self.tcp_port_spin = QSpinBox()
+        self.tcp_port_spin.setRange(1, 65535)
+        self.tcp_port_spin.setValue(5025)  # SCPI标准端口
+        layout.addRow("TCP端口:", self.tcp_port_spin)
+
+        # 超时设置
+        self.tcp_timeout_spin = QDoubleSpinBox()
+        self.tcp_timeout_spin.setRange(0.1, 60.0)
+        self.tcp_timeout_spin.setValue(5.0)
+        self.tcp_timeout_spin.setSingleStep(0.5)
+        self.tcp_timeout_spin.setSuffix(" 秒")
+        layout.addRow("超时时间:", self.tcp_timeout_spin)
+
+        # 资源字符串显示
+        self.tcp_resource_label = QLabel()
+        self.tcp_resource_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        layout.addRow("资源字符串:", self.tcp_resource_label)
+
+        layout.addRow(QLabel(""))  # 空行
+
+        # 信息标签
+        info_label = QLabel(
+            "TCP/IP连接通过以太网连接FLUKE 8846A仪器。\n"
+            "默认端口5025（SCPI标准）。\n"
+            "确保仪器已配置正确的IP地址和网络连接。"
+        )
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("color: #666666; font-style: italic;")
+        layout.addRow(info_label)
+
+        # 测试按钮
+        test_button = QPushButton("测试TCP连接")
+        test_button.clicked.connect(self.test_tcp_connection)
+        layout.addRow(test_button)
+
+        return widget
+
     def _setup_connections(self):
         """设置信号连接"""
         # 接口类型变化
@@ -345,11 +399,14 @@ class ConnectionDialog(QDialog):
         self.gpib_address_spin.valueChanged.connect(self._update_gpib_resource)
         self.usb_vendor_edit.textChanged.connect(self._update_usb_resource)
         self.usb_product_edit.textChanged.connect(self._update_usb_resource)
+        self.tcp_host_edit.textChanged.connect(self._update_tcp_resource)
+        self.tcp_port_spin.valueChanged.connect(self._update_tcp_resource)
 
         # 初始更新
         self._on_interface_changed(self.interface_combo.currentText())
         self._update_gpib_resource()
         self._update_usb_resource()
+        self._update_tcp_resource()
 
     def _load_settings(self):
         """加载设置"""
@@ -371,6 +428,8 @@ class ConnectionDialog(QDialog):
             self.tab_widget.setCurrentWidget(self.serial_tab)
         elif interface == INTERFACE_MOCK:
             self.tab_widget.setCurrentWidget(self.mock_tab)
+        elif interface == INTERFACE_TCP:
+            self.tab_widget.setCurrentWidget(self.tcp_tab)
 
         # 更新资源列表
         self.refresh_resources()
@@ -391,6 +450,17 @@ class ConnectionDialog(QDialog):
             self.usb_resource_label.setText(resource)
         else:
             self.usb_resource_label.setText("请填写厂商ID和产品ID")
+
+    def _update_tcp_resource(self):
+        """更新TCP资源字符串"""
+        host = self.tcp_host_edit.text()
+        port = self.tcp_port_spin.value()
+
+        if host:
+            resource = f"TCPIP::{host}::{port}::INSTR"
+            self.tcp_resource_label.setText(resource)
+        else:
+            self.tcp_resource_label.setText("请输入IP地址或主机名")
 
     def _refresh_serial_ports(self):
         """刷新串口列表"""
@@ -546,6 +616,71 @@ class ConnectionDialog(QDialog):
                 f"模拟连接测试时发生错误:\n{str(e)}"
             )
 
+    def test_tcp_connection(self):
+        """测试TCP连接"""
+        try:
+            from ...communication.tcp_adapter import TCPAdapter
+
+            # 获取参数
+            host = self.tcp_host_edit.text()
+            port = self.tcp_port_spin.value()
+            timeout = self.tcp_timeout_spin.value()
+
+            if not host:
+                QMessageBox.warning(self, "警告", "请输入IP地址或主机名")
+                return
+
+            # 显示进度条
+            self.progress_bar.setVisible(True)
+            self.progress_bar.setRange(0, 0)
+
+            # 创建TCP适配器
+            adapter_id = f"tcp_test_{host}_{port}"
+            adapter = TCPAdapter(adapter_id)
+
+            # 连接测试
+            success = adapter.connect(
+                host=host,
+                port=port,
+                timeout=timeout
+            )
+
+            if success:
+                # 测试通信
+                adapter.send(b"*IDN?")
+                response = adapter.receive(timeout=2.0)
+
+                if response:
+                    # 断开连接
+                    adapter.disconnect()
+
+                    self.progress_bar.setVisible(False)
+                    QMessageBox.information(
+                        self,
+                        "TCP连接测试",
+                        f"TCP连接测试成功\n"
+                        f"设备响应: {response.decode('utf-8', errors='ignore').strip()}"
+                    )
+                    self.ok_button.setEnabled(True)
+                    return
+
+            # 如果失败
+            adapter.disconnect()
+            self.progress_bar.setVisible(False)
+            QMessageBox.warning(
+                self,
+                "TCP连接测试",
+                "TCP连接测试失败，请检查网络连接和参数"
+            )
+
+        except Exception as e:
+            self.progress_bar.setVisible(False)
+            QMessageBox.warning(
+                self,
+                "TCP连接测试",
+                f"TCP连接测试时发生错误:\n{str(e)}"
+            )
+
     def get_connection_params(self) -> Dict[str, Any]:
         """获取连接参数
 
@@ -599,6 +734,13 @@ class ConnectionDialog(QDialog):
                 "response_delay": self.mock_delay_spin.value()
             })
 
+        elif interface == INTERFACE_TCP:
+            params.update({
+                "host": self.tcp_host_edit.text(),
+                "port": self.tcp_port_spin.value(),
+                "timeout": self.tcp_timeout_spin.value()
+            })
+
         return params
 
     def accept(self):
@@ -625,6 +767,11 @@ class ConnectionDialog(QDialog):
 
         elif interface == INTERFACE_MOCK:
             # 模拟接口不需要保存特殊设置，使用默认值即可
+            pass
+
+        elif interface == INTERFACE_TCP:
+            # TCP接口不需要在DeviceSettings中保存特殊设置，使用默认值即可
+            # 注意：TCP连接参数是动态的，不保存在设置中
             pass
 
         # 保存设置

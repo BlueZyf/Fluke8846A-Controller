@@ -17,7 +17,7 @@ from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QIcon
 
 from ..config.settings import AppSettings
-from ..config.constants import INTERFACE_SERIAL, INTERFACE_MOCK
+from ..config.constants import INTERFACE_SERIAL, INTERFACE_MOCK, INTERFACE_TCP, DEFAULT_TCP_PORT
 from ..core.instrument import Fluke8846AInstrument, MeasurementData
 from ..utils.logger import get_logger
 
@@ -380,6 +380,12 @@ class MainWindow(QMainWindow):
                     base_value=params.get("base_value", 5.0),
                     noise_level=params.get("noise_level", 0.001),
                     response_delay=params.get("response_delay", 50)
+                )
+            elif interface == INTERFACE_TCP:
+                success = self.instrument.connect_tcp(
+                    host=params.get("host", "192.168.1.100"),
+                    port=params.get("port", DEFAULT_TCP_PORT),
+                    timeout=params.get("timeout", 5.0)
                 )
             else:
                 # VISA连接（GPIB/USB）

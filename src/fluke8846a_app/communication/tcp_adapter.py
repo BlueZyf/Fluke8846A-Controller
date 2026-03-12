@@ -170,16 +170,18 @@ class TCPAdapter(BaseAdapter):
                 logger.error(error_msg)
                 return 0
 
-    def receive(self, timeout: float = 1.0) -> bytes:
+    def receive(self, timeout: float = None) -> bytes:
         """从TCP设备接收数据"""
         with self._lock:
+            # 确定实际超时时间
+            actual_timeout = timeout if timeout is not None else self.timeout
             try:
                 if not self.is_connected() or not self.socket:
                     raise RuntimeError("TCP适配器未连接")
 
                 # 设置临时超时
                 original_timeout = self.socket.gettimeout()
-                self.socket.settimeout(timeout)
+                self.socket.settimeout(actual_timeout)
 
                 try:
                     # 接收数据
@@ -203,7 +205,7 @@ class TCPAdapter(BaseAdapter):
 
             except socket.timeout:
                 # 超时不一定是错误，可能只是没有更多数据
-                logger.debug(f"TCP接收超时（{timeout}秒）")
+                logger.debug(f"TCP接收超时（{actual_timeout}秒）")
                 return b""
 
             except Exception as e:
@@ -212,7 +214,7 @@ class TCPAdapter(BaseAdapter):
                 logger.error(error_msg)
                 return b""
 
-    def query(self, data: bytes, timeout: float = 1.0) -> bytes:
+    def query(self, data: bytes, timeout: float = None) -> bytes:
         """TCP查询（发送命令并接收响应）"""
         with self._lock:
             try:
@@ -225,7 +227,8 @@ class TCPAdapter(BaseAdapter):
                 time.sleep(0.05)  # 给设备一些响应时间
 
                 # 接收数据
-                response = self.receive(timeout)
+                actual_timeout = timeout if timeout is not None else self.timeout
+                response = self.receive(actual_timeout)
 
                 return response
 

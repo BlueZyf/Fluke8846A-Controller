@@ -453,8 +453,15 @@ class Fluke8846AInstrument:
                 if not self.connected:
                     raise InstrumentError("仪器未连接")
 
+                logger.info(f"单次测量开始，当前功能: {self.current_function}")
+
+                # 确保仪器已配置为当前测量功能
+                # 有些仪器需要在测量前发送配置命令
+                self._ensure_measurement_configured()
+
                 # 发送测量命令
                 command = self._get_measurement_command()
+                logger.info(f"测量命令: {command}")
                 response = self._send_command(command)
 
                 if not response:
@@ -465,10 +472,11 @@ class Fluke8846AInstrument:
                 if measurement:
                     # 添加到历史记录
                     self._add_to_history(measurement)
-                    logger.debug(f"单次测量: {measurement}")
+                    logger.info(f"单次测量成功: {measurement}")
                     return measurement
-
-                return None
+                else:
+                    logger.warning(f"无法解析测量响应: {response}")
+                    return None
 
             except Exception as e:
                 logger.error(f"单次测量失败: {e}")
@@ -594,8 +602,13 @@ class Fluke8846AInstrument:
                 # 使用适配器
                 logger.debug(f"通过适配器发送命令: {command}")
                 response = self.adapter.query(command.encode('utf-8'))
-                logger.debug(f"适配器响应: {response}")
-                return response.decode('utf-8', errors='ignore') if response else None
+                logger.debug(f"适配器响应原始字节: {response}")
+                logger.debug(f"适配器响应长度: {len(response) if response else 0}")
+                if response:
+                    decoded = response.decode('utf-8', errors='ignore')
+                    logger.debug(f"适配器响应解码: '{decoded}'")
+                    return decoded
+                return None
             elif self.visa_manager and self.interface:
                 # 使用VISA管理器
                 # 需要资源名称，这里简化处理
@@ -660,6 +673,23 @@ class Fluke8846AInstrument:
             MEASUREMENT_FREQ: "Hz",
         }
         return units.get(self.current_function, "")
+
+    def _ensure_measurement_configured(self):
+        """确保仪器已配置为当前测量功能"""
+        try:
+            # 检查是否需要配置
+            # 这里可以添加更复杂的逻辑，比如检查上次配置的时间
+            # 目前总是发送配置命令以确保仪器处于正确状态
+            logger.info(f"确保仪器配置: {self.current_function}")
+            success = self.configure_measurement(
+                function=self.current_function,
+                range_val=self.current_range,
+                resolution=self.current_resolution
+            )
+            if not success:
+                logger.warning(f"仪器配置失败，但继续尝试测量")
+        except Exception as e:
+            logger.warning(f"仪器配置检查失败: {e}")
 
     def _add_to_history(self, measurement: MeasurementData):
         """添加到历史记录"""

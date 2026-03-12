@@ -155,7 +155,7 @@ class TCPAdapter(BaseAdapter):
 
                 bytes_sent = self.socket.send(data)
                 self.update_activity()
-                logger.debug(f"TCP发送数据: {data[:50].decode('utf-8', errors='ignore').strip()}... ({bytes_sent}字节)")
+                logger.info(f"TCP发送数据: {data[:50].decode('utf-8', errors='ignore').strip()}... ({bytes_sent}字节)")
                 return bytes_sent
 
             except socket.timeout as e:
@@ -200,7 +200,9 @@ class TCPAdapter(BaseAdapter):
 
                 self.update_activity()
                 if data:
-                    logger.debug(f"TCP接收数据: {data[:100].decode('utf-8', errors='ignore').strip()}... ({len(data)}字节)")
+                    logger.info(f"TCP接收数据: {data[:100].decode('utf-8', errors='ignore').strip()}... ({len(data)}字节)")
+                else:
+                    logger.info("TCP接收数据: 空响应")
                 return data
 
             except socket.timeout:
@@ -218,9 +220,11 @@ class TCPAdapter(BaseAdapter):
         """TCP查询（发送命令并接收响应）"""
         with self._lock:
             try:
+                logger.info(f"TCP查询开始: {data[:50].decode('utf-8', errors='ignore').strip()}...")
                 # 发送数据
                 bytes_sent = self.send(data)
                 if bytes_sent == 0:
+                    logger.error("TCP查询: 发送数据失败")
                     raise RuntimeError("发送数据失败")
 
                 # 等待响应
@@ -228,8 +232,9 @@ class TCPAdapter(BaseAdapter):
 
                 # 接收数据
                 actual_timeout = timeout if timeout is not None else self.timeout
+                logger.info(f"TCP查询等待响应，超时: {actual_timeout}秒")
                 response = self.receive(actual_timeout)
-
+                logger.info(f"TCP查询完成，响应长度: {len(response)}字节")
                 return response
 
             except Exception as e:

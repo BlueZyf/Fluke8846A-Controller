@@ -20,6 +20,7 @@ from ..communication.base_adapter import BaseAdapter
 from ..config.constants import *
 from ..utils.logger import get_logger
 from ..utils.converters import format_value, parse_measurement
+from ..core.commands import build_configure_command
 
 
 logger = get_logger(__name__)
@@ -412,38 +413,19 @@ class Fluke8846AInstrument:
                 if function not in MEASUREMENTS:
                     raise ValueError(f"无效的测量功能: {function}")
 
-                if range_val and range_val not in VOLTAGE_RANGES:
-                    raise ValueError(f"无效的量程: {range_val}")
+                # 量程和分辨率验证由build_configure_command函数处理
+                # 这里只做基本验证
 
-                if resolution and resolution not in RESOLUTIONS:
-                    raise ValueError(f"无效的分辨率: {resolution}")
+                # 使用命令构建函数创建配置命令
+                try:
+                    cmd = build_configure_command(function, range_val, resolution)
+                except ValueError as e:
+                    logger.error(f"构建配置命令失败: {e}")
+                    return False
 
-                # 根据功能发送配置命令
-                commands = []
-
-                if function == MEASUREMENT_DCV:
-                    cmd = f"CONF:VOLT:DC"
-                    if range_val and range_val != RANGE_AUTO:
-                        cmd += f" {range_val}"
-                    commands.append(cmd)
-
-                elif function == MEASUREMENT_ACV:
-                    cmd = f"CONF:VOLT:AC"
-                    if range_val and range_val != RANGE_AUTO:
-                        cmd += f" {range_val}"
-                    commands.append(cmd)
-
-                elif function == MEASUREMENT_OHM:
-                    cmd = f"CONF:RES"
-                    if range_val and range_val != RANGE_AUTO:
-                        # 电阻量程需要特殊处理
-                        pass
-                    commands.append(cmd)
-
-                # 发送所有命令
-                for cmd in commands:
-                    if not self._send_command(cmd):
-                        return False
+                # 发送配置命令
+                if not self._send_command(cmd):
+                    return False
 
                 # 更新本地状态
                 self.current_function = function

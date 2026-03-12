@@ -26,6 +26,10 @@
     "auto_scale": true,
     "refresh_rate": 1000
   },
+<<<<<<< HEAD
   "last_modified": "2026-03-12T23:51:30.779578",
+=======
+  "last_modified": "2026-03-12T22:29:32.457981",
+>>>>>>> 9afcb58bc23ee5eade0459ec316b9838020853ee
   "version": "0.1.0"
 }

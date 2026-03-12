@@ -382,6 +382,7 @@ class MainWindow(QMainWindow):
                     response_delay=params.get("response_delay", 50)
                 )
             elif interface == INTERFACE_TCP:
+                print(params)
                 success = self.instrument.connect_tcp(
                     host=params.get("host", "192.168.1.100"),
                     port=params.get("port", DEFAULT_TCP_PORT),

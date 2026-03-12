@@ -40,6 +40,7 @@ class ConnectionDialog(QDialog):
         super().__init__(parent)
         self.settings = settings
         self.visa_manager: Optional[VisaManager] = None
+        self._updating_tab = False
         self._setup_ui()
         self._setup_connections()
         self._load_settings()
@@ -395,6 +396,9 @@ class ConnectionDialog(QDialog):
         # 接口类型变化
         self.interface_combo.currentTextChanged.connect(self._on_interface_changed)
 
+        # 选项卡变化
+        self.tab_widget.currentChanged.connect(self._on_tab_changed)
+
         # 参数变化
         self.gpib_address_spin.valueChanged.connect(self._update_gpib_resource)
         self.usb_vendor_edit.textChanged.connect(self._update_usb_resource)
@@ -419,20 +423,55 @@ class ConnectionDialog(QDialog):
         Args:
             interface: 接口类型
         """
-        # 显示对应的选项卡
-        if interface == INTERFACE_GPIB:
-            self.tab_widget.setCurrentWidget(self.gpib_tab)
-        elif interface == INTERFACE_USB:
-            self.tab_widget.setCurrentWidget(self.usb_tab)
-        elif interface == INTERFACE_SERIAL:
-            self.tab_widget.setCurrentWidget(self.serial_tab)
-        elif interface == INTERFACE_MOCK:
-            self.tab_widget.setCurrentWidget(self.mock_tab)
-        elif interface == INTERFACE_TCP:
-            self.tab_widget.setCurrentWidget(self.tcp_tab)
+        # 设置标志，防止选项卡变化触发循环
+        self._updating_tab = True
+        try:
+            # 显示对应的选项卡
+            if interface == INTERFACE_GPIB:
+                self.tab_widget.setCurrentWidget(self.gpib_tab)
+            elif interface == INTERFACE_USB:
+                self.tab_widget.setCurrentWidget(self.usb_tab)
+            elif interface == INTERFACE_SERIAL:
+                self.tab_widget.setCurrentWidget(self.serial_tab)
+            elif interface == INTERFACE_MOCK:
+                self.tab_widget.setCurrentWidget(self.mock_tab)
+            elif interface == INTERFACE_TCP:
+                self.tab_widget.setCurrentWidget(self.tcp_tab)
 
-        # 更新资源列表
-        self.refresh_resources()
+            # 更新资源列表
+            self.refresh_resources()
+        finally:
+            self._updating_tab = False
+
+    def _on_tab_changed(self, index: int):
+        """选项卡变化处理
+
+        Args:
+            index: 选项卡索引
+        """
+        if self._updating_tab:
+            return
+
+        if index < 0:
+            return
+
+        # 映射选项卡索引到接口类型
+        tab_to_interface = {
+            0: INTERFACE_GPIB,
+            1: INTERFACE_USB,
+            2: INTERFACE_SERIAL,
+            3: INTERFACE_MOCK,
+            4: INTERFACE_TCP,
+        }
+
+        if index in tab_to_interface:
+            interface = tab_to_interface[index]
+            # 防止循环触发
+            self._updating_tab = True
+            try:
+                self.interface_combo.setCurrentText(interface)
+            finally:
+                self._updating_tab = False
 
     def _update_gpib_resource(self):
         """更新GPIB资源字符串"""
